@@ -1,0 +1,5 @@
+node_modules
+chord-data.json
+cache
+eng.traineddata
+package-lock.json
