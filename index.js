@@ -155,16 +155,26 @@ function getChordImgsFromHtml(html) {
 
 function getPageInfoFromHtml(html) {
     const $ = cheerio.load(html)
-    let [fullMatch, firstChordIndex, lastChordIndex, totalChordCount] = $('body').html().match(/Showing results (\d+) to (\d+) of (\d+) chord/)
-    firstChordIndex = parseInt(firstChordIndex)
-    lastChordIndex = parseInt(lastChordIndex)
-    totalChordCount = parseInt(totalChordCount)
-    const totalPageCount = Math.ceil(totalChordCount/lastChordIndex)
-    return {
-        firstChordIndex,
-        lastChordIndex,
-        totalChordCount,
-        totalPageCount
+    const noResults = !$('.row.jguitar-chord-row').html().trim()
+    if (noResults) {
+        return {
+            firstChordIndex: 0,
+            lastChordIndex: 0,
+            totalChordCount: 0,
+            totalPageCount: 0
+        }
+    } else {
+        let [fullMatch, firstChordIndex, lastChordIndex, totalChordCount] = $('body').html().match(/Showing results (\d+) to (\d+) of (\d+) chord/)
+        firstChordIndex = parseInt(firstChordIndex)
+        lastChordIndex = parseInt(lastChordIndex)
+        totalChordCount = parseInt(totalChordCount)
+        const totalPageCount = Math.ceil(totalChordCount/lastChordIndex)
+        return {
+            firstChordIndex,
+            lastChordIndex,
+            totalChordCount,
+            totalPageCount
+        }
     }
 }
 
@@ -173,7 +183,7 @@ async function getChordImgs(rootNote, chordSuffix, bassNote, cacheDir) {
     const encChordSuffix = encodeURIComponent(chordSuffix)
     const encBassNote = encodeURIComponent(bassNote)
 
-    const url = `${jGuitarBaseUrl}/chord?root=${encRootNote}&chord=${encChordSuffix}&bass=${encBassNote}&labels=finger&gaps=0&fingers=4&notes=sharps`
+    const url = `${jGuitarBaseUrl}/chord?root=${encRootNote}&chord=${encChordSuffix}&bass=${encBassNote}&labels=finger&gaps=2&fingers=4&notes=sharps`
 
     let html
     if (await fs.pathExists(`${cacheDir}/page1.html`))
@@ -239,6 +249,8 @@ async function main() {
     })
 
     /*
+    const testImgUrl = "https://jguitar.com/images/chordshape/Dsharp-Major-Dsharp-11%2C13%2C13%2C12%2C11%2C11-sharps-finger.png"
+    await download(testImgUrl, './', {filename: 'test.png'})
     const inputImg = await sharp('test.png')
 
     const fingering = await getChordDiagramFingering(inputImg)
@@ -247,6 +259,11 @@ async function main() {
     console.log('Fingering detected:', fingering)
     process.exit()
     */
+
+
+    let percentDone = 0
+    let chordsDone = 0
+    const chordsTotalCount = rootNotes.length*chordSuffixes.length*bassNotes.length
 
     for (const rootNote of rootNotes) {
         for (const chordSuffix of chordSuffixes) {
@@ -261,31 +278,38 @@ async function main() {
 
                 const chordShapeImgs = await getChordImgs(rootNote, chordSuffix, bassNote, pagesDir)
 
-                if (chordData[shortChordName] && chordShapeImgs.length === chordData[shortChordName].length)
-                    continue // Skip this chord if we already parsed al its shapes
-                else
+                if (!(chordData[shortChordName] && chordShapeImgs.length === chordData[shortChordName].length)) { // Skip this chord if we already parsed al its shapes
                     chordData[shortChordName] = [] // If we didn't extract all shpaes of this chord yet, remove all shapes we got before and try to extract them again
 
-                //TODO: extract the chord subsets (which unfortunately don't have fingering data) from the html and add them to chordData
-                for (let [i,img] of Object.entries(chordShapeImgs)) {
-                    const { fingerPositions, fingering } = await parseChordImg(img, i, diagramsDir)
+                    //TODO: extract the chord subsets (which unfortunately don't have fingering data) from the html and add them to chordData
+                    for (let [i,img] of Object.entries(chordShapeImgs)) {
+                        const { fingerPositions, fingering } = await parseChordImg(img, i, diagramsDir)
 
-                    console.log('Chord:', `${fullChordName} (Shape ${i})`)
-                    console.log('Finger Positions:', fingerPositions)
-                    console.log('Fingering:', fingering)
+                        console.log('Chord:', `${fullChordName} (Shape ${i})`)
+                        console.log('Finger Positions:', fingerPositions)
+                        console.log('Fingering:', fingering)
 
-                    chordData[shortChordName].push({
-                        positions: fingerPositions,
-                        fingerings: [fingering]
-                    })
+                        chordData[shortChordName].push({
+                            positions: fingerPositions,
+                            fingerings: [fingering]
+                        })
 
-                    await fs.outputJson(chordJsonFile, chordData)
+                        await fs.outputJson(chordJsonFile, chordData)
+                    }
                 }
 
-                process.exit() // Cancel early because we only want to parse the data for the first chord for now
+                chordsDone++
+                percentDone = (chordsDone/chordsTotalCount)*100
+                percentDone = Math.round(percentDone*100)/100
+                console.log('----------------------------------------------------------')
+                console.log(`Parsed ${chordsDone}/${chordsTotalCount} (${percentDone}%)`)
+                console.log('----------------------------------------------------------')
+                //process.exit() // Cancel early to only parse the data for the first chord
             }
+
         }
     }
+    console.log("Done!")
     process.exit() // Exit when we are done
 }
 

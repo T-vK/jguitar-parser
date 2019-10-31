@@ -1,5 +1,6 @@
 node_modules
-chord-data.json
+chords.json
 cache
 eng.traineddata
 package-lock.json
+test.png
