@@ -1,0 +1,14 @@
+{
+  "name": "chords-db-converter",
+  "version": "0.1.0",
+  "description": "Converts the output to the chords-db format",
+  "main": "index.js",
+  "author": "Zoltan Szabo",
+  "license": "MIT",
+  "scripts": {
+    "start": "node --experimental-modules index.mjs"
+  },
+  "dependencies": {
+    "fs": "^0.0.1-security"
+  }
+}
