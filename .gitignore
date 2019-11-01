@@ -1,5 +1,7 @@
 node_modules
 chords.json
+chords.min.json
+chords.complete.json
 cache
 eng.traineddata
 package-lock.json

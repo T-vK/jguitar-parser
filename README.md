@@ -8,3 +8,6 @@ Requires a recent version of Node.js
     npm i
     node ./index.js
 ```
+
+## Credits
+Credits to [szaza and tombatossals](https://github.com/tombatossals/chords-db/issues/2) for all their help!
