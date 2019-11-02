@@ -77,10 +77,27 @@ const convertPosition = (position) => {
     : position;
 };
 
+const getBarres = (fingering, positions) => {
+  const barres = new Set();
+
+  for (let i = 0; i < fingering.length; i++) {
+    if (positions[i] !== "x" && positions[i] !== "0") {
+      const fingerIndex = fingering[i];
+      if (fingering.filter(index => index == fingerIndex).length > 1) {
+        barres.add(positions[i]);
+      }
+    }
+  }
+
+  return (barres.size > 0) ? `,\n\r\t\t\tbarres: [${Array.from(barres)}]` : "";
+};
+
 const convertChord = (chord) => {
+  const fingering = chord.fingerings[0];
+
   return `\n\r\t\t{
     \tfrets: "${chord.positions.map(convertPosition).join("")}",
-    \tfingers: "${chord.fingerings[0].join("")}"
+    \tfingers: "${fingering.join("")}"${getBarres(fingering, chord.positions)}
   \t}`
 };
 
